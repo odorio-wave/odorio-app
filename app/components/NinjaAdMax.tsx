@@ -5,10 +5,10 @@ import React, { useEffect, useRef } from "react";
 const SCRIPT_URL = "https://adm.shinobi.jp/st/t.js";
 
 type Props = {
-    ccde4842e0ee972292ffd0af14da1153: string; // 忍者AdMaxのID（数字の文字列）
+    admaxId: string; // 忍者AdMaxのID（数字の文字列）
 };
 
-export default function NinjaAdMax({ ccde4842e0ee972292ffd0af14da1153 }: Props) {
+export default function NinjaAdMax({ admaxId }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -26,7 +26,7 @@ export default function NinjaAdMax({ ccde4842e0ee972292ffd0af14da1153 }: Props) 
         // 生成したスクリプトをDOMに追加して実行させる
         containerRef.current.appendChild(script);
 
-    }, [ccde4842e0ee972292ffd0af14da1153]);
+    }, [admaxId]);
 
     return (
         <div
@@ -36,7 +36,7 @@ export default function NinjaAdMax({ ccde4842e0ee972292ffd0af14da1153 }: Props) 
             {/* 広告が表示される場所 */}
             <div
                 className="admax-ads"
-                data-admax-id={ccde4842e0ee972292ffd0af14da1153}
+                data-admax-id={admaxId}
                 style={{ display: "inline-block" }}
             />
         </div>
