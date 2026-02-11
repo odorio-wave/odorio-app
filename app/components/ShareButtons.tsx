@@ -9,57 +9,60 @@ type Props = {
 };
 
 export default function ShareButtons({ title, options, topicId }: Props) {
-    // URLをStateで管理
-    const [url, setUrl] = useState("");
-    const [isMobile, setIsMobile] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
+    // マウント後に表示するようにする（Hydrationエラー防止）
     useEffect(() => {
-        // 1. URLの取得
-        const baseUrl = window.location.origin;
+        setMounted(true);
+    }, []);
 
-        // topicIdがある場合(投票ページ)は個別URLを、なければトップページURLを設定
-        if (topicId) {
-            setUrl(`${baseUrl}/topic/${topicId}`);
-        } else {
-            setUrl(baseUrl);
-        }
-
-        // 2. スマホ判定
-        if (typeof navigator !== 'undefined') {
-            setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-        }
-    }, [topicId]);
+    if (!mounted) {
+        return <div className="h-10 animate-pulse bg-gray-200 rounded-lg w-full max-w-xs" />;
+    }
 
     // シェアするテキストを作成
     // mapとjoinを使って、選択肢が3つ以上でも「A 🆚 B 🆚 C...」と繋がるように修正
     const shareText = (options && options.length >= 1)
-        ? `${title}\n\n` + options.map(o => o.text).join(" 🆚 ") + `\n`
-        : `${title}\n`;
+        ? `${title}\n\n` + options.map(o => o.text).join(" 🆚 ") + `\n投票に参加しよう!`
+        : `${title}\n投票に参加しよう!`;
+
+    // リンク先URL（表示用）
+    const currentUrl = typeof window !== "undefined"
+        ? (topicId ? `${window.location.origin}/topic/${topicId}` : window.location.href)
+        : "";
 
     // エンコード（URLやテキストをリンク用に変換）
-    const encodedUrl = encodeURIComponent(url);
-    const encodedText = encodeURIComponent(shareText + "#ODORIO");
-
-    // ★重要: URLがまだ無い（サーバー側レンダリング中など）場合はスペースだけ確保
-    if (!url) {
-        return <div className="h-10 animate-pulse bg-gray-200 rounded-lg w-full max-w-xs" />;
-    }
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedText = encodeURIComponent(shareText + " #ODORIO");
 
     // --- 以下、stateのurlを使います ---
     const handleNativeShare = async () => {
-        if (navigator.share) {
+        // 現在のURLを確実に取得
+        const shareData = {
+            title: title,
+            text: shareText + " #ODORIO",
+            url: currentUrl,
+        };
+
+        // 1. スマホなど Web Share API が使える場合 (かつ HTTPS であること)
+        // ※ navigator.canShare で「本当にシェアできるか」を事前チェックするとなお確実です
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
             try {
-                await navigator.share({
-                    title: title,
-                    text: shareText + ' #ODORIO',
-                    url: url,
-                });
+                await navigator.share(shareData);
             } catch (error) {
-                console.log('Share canceled', error);
+                console.log('シェアがキャンセルされました', error);
             }
-        } else {
-            alert('URLをコピーしました！');
-            navigator.clipboard.writeText(url);
+        }
+        // 2. PCや、非対応ブラウザ(http環境含む)の場合はコピー
+        else {
+            try {
+                await navigator.clipboard.writeText(currentUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                alert('コピーに失敗しました');
+            }
         }
     };
 
