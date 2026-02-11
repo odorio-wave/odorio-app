@@ -149,11 +149,19 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
                                 {/* 真ん中のVS */}
                                 <div style={{
-                                    fontSize: 60,
+                                    width: 100,
+                                    height: 100,
+                                    background: '#ffffff',  // 背景を白にする
+                                    color: '#000000',       // 文字を黒にする
+                                    borderRadius: '50%',    // 丸くする
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: 40,
                                     fontWeight: '900',
-                                    color: '#000000',       // 黒色
-                                    textShadow: '3px 3px 0px #ffffff', // 白い縁取り
-                                    fontStyle: 'italic',    // 斜体
+                                    border: '5px solid #e5e7eb', // 薄いグレーの枠線
+                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', // 影をつける
+                                    flexShrink: 0           // 潰れないようにする
                                 }}>
                                     VS
                                 </div>
