@@ -121,7 +121,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                     >
 
                         {options.length === 2 ? (
-                            /* 【2つの時】 左右に大きく配置（従来通り） */
+                            /* 【2つの時】 左右に大きく配置 */
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -130,6 +130,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                                 justifyContent: 'center'
                             }}
                             >
+                                {/* 左の選択肢 (青) */}
                                 <div style={{
                                     background: '#3742fa',
                                     color: 'white',
@@ -142,18 +143,22 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis'
-                                }}
-                                >
+                                }}>
                                     {options[0].text}
                                 </div>
+
+                                {/* 真ん中のVS */}
                                 <div style={{
                                     fontSize: 60,
                                     fontWeight: '900',
-                                    color: '#2f3542'
-                                }}
-                                >
+                                    color: '#000000',       // 黒色
+                                    textShadow: '3px 3px 0px #ffffff', // 白い縁取り
+                                    fontStyle: 'italic',    // 斜体
+                                }}>
                                     VS
                                 </div>
+
+                                {/* 右の選択肢 (赤) */}
                                 <div style={{
                                     background: '#FF4757',
                                     color: 'white',
@@ -166,8 +171,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis'
-                                }}
-                                >
+                                }}>
                                     {options[1].text}
                                 </div>
                             </div>

@@ -4,69 +4,97 @@ import React, { useState, useEffect } from "react";
 
 type Props = {
     title: string;
-    options?: { text: string }[]; // 追加: 選択肢
-    topicId?: string;             // 追加: URL生成用のお題ID
+    options?: { id: string; text: string }[]; // 型を修正
+    topicId?: string;             // URL生成用のお題ID
+    votes?: Record<string, number>; // 票数データ（なくても動きます）
+    showStats?: boolean;            // 統計を表示するかどうかのフラグ
 };
 
-export default function ShareButtons({ title, options, topicId }: Props) {
+export default function ShareButtons({ title, options, topicId, votes, showStats = false }: Props) {
+    const [url, setUrl] = useState("");
     const [copied, setCopied] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    // マウント後に表示するようにする（Hydrationエラー防止）
     useEffect(() => {
         setMounted(true);
-    }, []);
+        // 1. URLの取得
+        const baseUrl = window.location.origin;
+        if (topicId) {
+            setUrl(`${baseUrl}/topic/${topicId}`);
+        } else {
+            setUrl(baseUrl);
+        }
+    }, [topicId]);
 
-    if (!mounted) {
+    // シェアするテキストを作成
+    const generateShareText = () => {
+        // 基本のテキスト
+        const baseFooter = `\nみんなはどう思う？投票に参加してね！`;
+
+        if (!options || options.length === 0) {
+            return `${title}${baseFooter}`;
+        }
+
+        // 票数データがない、または「統計表示NG（投票中など）」の場合は、選択肢名のみ
+        if (!votes || !showStats) {
+            return `${title}\n` + options.map(o => o.text).join(" 🆚 ") + baseFooter;
+        }
+
+        // --- 以下は showStats = true (結果公開・議論・アーカイブ) の時のみ実行 ---
+
+        // 合計票数を計算
+        const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+
+        const optionTexts = options.map(o => {
+            const count = votes[o.id] || 0;
+            const percent = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
+            return `${o.text}(${percent}%)`;
+        });
+
+        return `${title}\n` + optionTexts.join(" 🆚 ") + `\n現在${totalVotes}票！${baseFooter}`;
+    };
+
+    const shareText = generateShareText();
+
+    // エンコード（URLやテキストをリンク用に変換）
+    const encodedUrl = encodeURIComponent(url);
+    const encodedText = encodeURIComponent(shareText + "#ODORIO");
+
+    // マウント前やURL生成前はローディング表示
+    if (!mounted || !url) {
         return <div className="h-10 animate-pulse bg-gray-200 rounded-lg w-full max-w-xs" />;
     }
 
-    // シェアするテキストを作成
-    // mapとjoinを使って、選択肢が3つ以上でも「A 🆚 B 🆚 C...」と繋がるように修正
-    const shareText = (options && options.length >= 1)
-        ? `${title}\n\n` + options.map(o => o.text).join(" 🆚 ") + `\n投票に参加しよう!`
-        : `${title}\n投票に参加しよう!`;
-
-    // リンク先URL（表示用）
-    const currentUrl = typeof window !== "undefined"
-        ? (topicId ? `${window.location.origin}/topic/${topicId}` : window.location.href)
-        : "";
-
-    // エンコード（URLやテキストをリンク用に変換）
-    const encodedUrl = encodeURIComponent(currentUrl);
-    const encodedText = encodeURIComponent(shareText + " #ODORIO");
-
-    // --- 以下、stateのurlを使います ---
+    // シェアボタンの処理
     const handleNativeShare = async () => {
-        // 現在のURLを確実に取得
         const shareData = {
             title: title,
             text: shareText + " #ODORIO",
-            url: currentUrl,
+            url: url,
         };
 
-        // 1. スマホなど Web Share API が使える場合 (かつ HTTPS であること)
-        // ※ navigator.canShare で「本当にシェアできるか」を事前チェックするとなお確実です
+        // 1. スマホなど Web Share API が使える場合
+        // (HTTPS環境かつ、ブラウザが対応している場合のみ動作)
+        // ※ navigator.canShare で「本当にシェアできるか」を事前チェック
         if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
             try {
                 await navigator.share(shareData);
             } catch (error) {
-                console.log('シェアがキャンセルされました', error);
+                // キャンセルされた場合は何もしない
+                console.log('Share canceled', error);
             }
         }
-        // 2. PCや、非対応ブラウザ(http環境含む)の場合はコピー
+        // 2. PCや、開発環境(http)の場合はクリップボードにコピー
         else {
             try {
-                await navigator.clipboard.writeText(currentUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                await navigator.clipboard.writeText(url);
+                setCopied(true); // コピー完了状態にする
+                setTimeout(() => setCopied(false), 2000); // 2秒後に戻す
             } catch (err) {
                 alert('コピーに失敗しました');
             }
         }
     };
-
-    const btnBase = "w-24 h-10 rounded-lg text-xs font-bold flex items-center justify-center transition shadow-sm";
 
     return (
         <div className="flex justify-center items-center gap-3">
@@ -96,12 +124,19 @@ export default function ShareButtons({ title, options, topicId }: Props) {
             {/* ネイティブ共有/コピー */}
             <button
                 onClick={handleNativeShare}
-                className={`${btnBase} bg-gray-200 text-gray-700 hover:bg-gray-300 gap-1`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm border
+                    ${copied
+                        ? "bg-green-100 text-green-700 border-green-300"
+                        : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                    }`}
             >
-                <span className="text-sm">
-                    📤
-                </span>
-                共有
+                {copied ? (
+                    <>✅ コピー完了</>
+                ) : (
+                    <span className="text-sm">
+                        📤 共有・🔗 コピー
+                    </span>
+                )}
             </button>
         </div>
     );

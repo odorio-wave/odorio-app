@@ -553,11 +553,11 @@ export default function Home() {
                                 “今”気になるトピックをみんなで投票・議論
                             </p>
 
-                            <div className="mb-5 text-sm text-gray-600">
+                            {/* <div className="mb-5 text-sm text-gray-600">
                                 <span>
                                     ゲスト (<Link href="/login" className="text-blue-600 hover:underline">ログイン</Link>)
                                 </span>
-                            </div>
+                            </div> */}
                             <div>
                                 <ShareButtons
                                     title="ODORIO - 投票×議論"

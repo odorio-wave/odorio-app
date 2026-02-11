@@ -46,7 +46,6 @@ const OPTION_BG_COLORS = ["bg-blue-500", "bg-purple-500", "bg-green-500", "bg-ye
 
 const MAX_REASON_LENGTH = 100;
 const MAX_COMMENT_LENGTH = 200;
-const COMMENTS_PER_PAGE = 20;
 const POST_COOLDOWN_MS = 2000;
 
 // フェーズ自動判定
@@ -77,6 +76,8 @@ export default function TopicClient({ id }: { id: string }) {
     const [now, setNow] = useState<Date>(new Date());
     const [phaseMode, setPhaseMode] = useState<string | null>(null);
     const [userId, setUserId] = useState<string>("");
+    // 表示件数の設定 (デフォルト20件)
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     // 自分の投票状態
     const [voteChoice, setVoteChoice] = useState<string | null>(null);
@@ -492,10 +493,45 @@ export default function TopicClient({ id }: { id: string }) {
         return list;
     }, [comments, isArchive, activeBoardTab, isVotingPhase, voteChoice, isDiscussionPhase]);
 
-    // 掲示板ページネーション
-    const totalPages = Math.ceil(currentCommentList.length / COMMENTS_PER_PAGE);
-    const displayedComments = currentCommentList.slice((commentPage - 1) * COMMENTS_PER_PAGE, commentPage * COMMENTS_PER_PAGE);
-    const getCommentNumber = (index: number) => (commentPage - 1) * COMMENTS_PER_PAGE + index + 1;
+    // 掲示板ページネーション (動的itemsPerPage)
+    const totalPages = Math.ceil(currentCommentList.length / itemsPerPage);
+
+    // ページ数が減ったときに範囲外に行かないように調整
+    useEffect(() => {
+        if (commentPage > totalPages && totalPages > 0) {
+            setCommentPage(1);
+        }
+    }, [itemsPerPage, totalPages, commentPage]);
+
+    const displayedComments = currentCommentList.slice((commentPage - 1) * itemsPerPage, commentPage * itemsPerPage);
+    const getCommentNumber = (index: number) => (commentPage - 1) * itemsPerPage + index + 1;
+
+    // スマートページネーションの計算
+    const getPaginationRange = () => {
+        const delta = 2; // 現在ページの前後に表示する数
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= commentPage - delta && i <= commentPage + delta)) {
+                range.push(i);
+            }
+        }
+
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push('...');
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
+        }
+        return rangeWithDots;
+    };
 
     // 理由カード描画
     const renderReasonCard = (r: any, idx: number) => {
@@ -660,6 +696,8 @@ export default function TopicClient({ id }: { id: string }) {
                             title={topicData.title}
                             options={topicData.options}   // ★選択肢を渡す
                             topicId={topicData.topicId}   // ★IDを渡して、正しいURLを作らせる
+                            votes={votes}
+                            showStats={showDetailCounts}
                         />
                     </div>
                 </div>
@@ -982,10 +1020,29 @@ export default function TopicClient({ id }: { id: string }) {
 
                         {/* --- 掲示板エリア (ページ切り替え対応) --- */}
                         <section className="pb-20">
-                            <h2 className="text-xl font-bold mb-4"
-                            >
-                                {isDiscussionPhase || isArchive ? "🗣️ 議論掲示板" : "🔒 陣営別掲示板"}
-                            </h2>
+                            {/* ヘッダーに件数セレクター */}
+                            <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-4 gap-2">
+                                <h2 className="text-xl font-bold">
+                                    {isDiscussionPhase || isArchive ? "🗣️ 議論掲示板" : "🔒 陣営別掲示板"}
+                                </h2>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-gray-500 font-bold text-xs">
+                                        表示件数:
+                                    </span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCommentPage(1); // 件数を変えたら1ページ目に戻す
+                                        }}
+                                        className="border border-gray-300 rounded p-1 bg-white text-gray-700 font-bold focus:ring-2 focus:ring-blue-500 text-xs"
+                                    >
+                                        <option value={20}>20件</option>
+                                        <option value={50}>50件</option>
+                                        <option value={100}>100件</option>
+                                    </select>
+                                </div>
+                            </div>
 
                             {isArchive && (
                                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -1056,23 +1113,41 @@ export default function TopicClient({ id }: { id: string }) {
                                 {displayedComments.length === 0 && <p className="text-gray-400 text-sm py-4 text-center">コメントはありません</p>}
                             </div>
 
+                            {/* スマートページネーション */}
                             {totalPages > 1 && (
-                                <div className="flex justify-center gap-4 text-sm mt-4 mb-4 items-center bg-gray-100 p-2 rounded-lg">
+                                <div className="flex justify-center items-center gap-1 flex-wrap bg-gray-100 p-3 rounded-lg mt-4 mb-4">
                                     <button
                                         disabled={commentPage === 1}
-                                        onClick={() => setCommentPage(p => p - 1)}
-                                        className="px-3 py-1 bg-white border rounded shadow disabled:opacity-30 font-bold">
-                                        前へ
+                                        onClick={() => setCommentPage(p => Math.max(1, p - 1))}
+                                        className="px-3 py-1 bg-white border rounded shadow-sm disabled:opacity-30 hover:bg-gray-50 font-bold text-sm"
+                                    >
+                                        ←
                                     </button>
-                                    <span
-                                        className="font-bold text-gray-700">{commentPage} / {totalPages}
-                                        ページ
-                                    </span>
+
+                                    {getPaginationRange().map((page, index) => (
+                                        page === '...' ? (
+                                            <span key={`dots-${index}`} className="px-2 text-gray-400">...</span>
+                                        ) : (
+                                            <button
+                                                key={`page-${page}`}
+                                                onClick={() => setCommentPage(Number(page))}
+                                                className={`min-w-[32px] h-8 flex items-center justify-center rounded border text-sm font-bold transition
+                                                    ${commentPage === page
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    ))}
+
                                     <button
                                         disabled={commentPage === totalPages}
-                                        onClick={() => setCommentPage(p => p + 1)}
-                                        className="px-3 py-1 bg-white border rounded shadow disabled:opacity-30 font-bold">
-                                        次へ
+                                        onClick={() => setCommentPage(p => Math.min(totalPages, p + 1))}
+                                        className="px-3 py-1 bg-white border rounded shadow-sm disabled:opacity-30 hover:bg-gray-50 font-bold text-sm"
+                                    >
+                                        →
                                     </button>
                                 </div>
                             )}
