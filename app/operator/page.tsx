@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 // import Image from "next/image";
 
 export default function Operator() {
@@ -10,6 +9,38 @@ export default function Operator() {
   const shareTitle = "ODORIO - 投票×議論";
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(shareTitle + "\n");
+
+  // コピー完了のステート
+  const [isCopied, setIsCopied] = useState(false);
+
+  // ネイティブシェア & コピー機能
+  const handleNativeShare = async () => {
+    const shareData = {
+      title: shareTitle,
+      text: shareTitle,
+      url: shareUrl,
+    };
+
+    // 1. スマホなどで「共有メニュー」が使えるならそれを使う
+    if (navigator.share && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // キャンセルされた場合などは何もしない
+        return;
+      }
+    }
+
+    // 2. 使えない場合（PCなど）はクリップボードにコピー
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      alert("コピーに失敗しました");
+    }
+  };
 
   return (
     <div className="flex justify-center min-h-screen bg-gray-50">
@@ -71,6 +102,7 @@ export default function Operator() {
         <div className="border-t border-gray-100 pt-6">
           <p className="text-xs text-gray-400 mb-3">このサイトをシェア</p>
           <div className="flex justify-center gap-2">
+            {/* X (Twitter) */}
             <a
               href={`https://x.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
               target="_blank"
@@ -79,6 +111,7 @@ export default function Operator() {
             >
               <span className="mr-1">𝕏</span> Post
             </a>
+            {/* LINE */}
             <a
               href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}`}
               target="_blank"
@@ -87,6 +120,16 @@ export default function Operator() {
             >
               LINEで送る
             </a>
+            {/* 共有 / その他 (Web Share API) */}
+            <button
+              onClick={handleNativeShare}
+              className={`flex items-center justify-center px-4 py-2 text-sm font-bold rounded-md transition min-w-[100px] border ${isCopied
+                ? "bg-green-500 text-white border-green-500" // コピー完了時
+                : "bg-gray-600 hover:bg-gray-700 text-white border-gray-600" // 通常時
+                }`}
+            >
+              {isCopied ? "✅ OK" : "📤 共有"}
+            </button>
           </div>
         </div>
       </div>

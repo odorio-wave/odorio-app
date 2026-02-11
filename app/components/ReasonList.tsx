@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-// 型定義（簡易版）
+// 型定義
 type Reason = {
     id: string;
     text: string;
@@ -45,7 +45,9 @@ export default function ReasonList({ reasons, options, isDiscussionPhase, userId
                 {badge}
                 <div className="flex justify-between items-start gap-2">
                     <div className="flex-1">
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{r.text}</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                            {r.text}
+                        </p>
                         <div className="text-[10px] text-gray-400 mt-1">
                             {r.senderName || "名無し"}
                         </div>
@@ -54,8 +56,12 @@ export default function ReasonList({ reasons, options, isDiscussionPhase, userId
                         onClick={() => onVote(r.id)}
                         className={`flex flex-col items-center min-w-[40px] p-1 rounded-lg transition ${isLiked ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}
                     >
-                        <span className="text-lg">♥</span>
-                        <span className="text-xs font-bold">{likeCount}</span>
+                        <span className="text-lg">
+                            ♥
+                        </span>
+                        <span className="text-xs font-bold">
+                            {likeCount}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -140,7 +146,9 @@ export default function ReasonList({ reasons, options, isDiscussionPhase, userId
                 {displayAll.length > 0 ? (
                     displayAll.map((r, idx) => <ReasonCard key={r.id} r={r} rank={idx + 1} />)
                 ) : (
-                    <p className="text-center text-gray-400 text-sm py-4">まだ投稿がありません。一番乗りで投稿しよう！</p>
+                    <p className="text-center text-gray-400 text-sm py-4">
+                        まだ投稿がありません。一番乗りで投稿しよう！
+                    </p>
                 )}
             </div>
 

@@ -167,9 +167,10 @@ export default function Guide() {
       {/* --- フッター --- */}
       <footer className="bg-gray-900 text-gray-400 py-8 text-center text-sm">
         <div className="flex justify-center gap-4 mb-4">
-          <Link href="/terms" className="hover:text-white">利用規約</Link>
-          <Link href="/privacy" className="hover:text-white">プライバシー</Link>
-          <Link href="/contact" className="hover:text-white">お問い合わせ</Link>
+          <Link href="/contact" className="hover:underline">お問い合わせ</Link>
+          <Link href="/terms" className="hover:underline">利用規約</Link>
+          <Link href="/privacy" className="hover:underline">プライバシー</Link>
+          <Link href="/operator" className="hover:underline">運営者情報</Link>
         </div>
         &copy; {new Date().getFullYear()} ODORIO
       </footer>
