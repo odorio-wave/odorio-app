@@ -41,10 +41,10 @@ export async function generateMetadata(
     const shortDescription = "究極の2択！あなたはどっち派？みんなの投票結果を見てみよう。";
 
     return {
-        title: pageTitle,
+        title: `${topicData.title} | ODORIO`,
         description: shortDescription,
         openGraph: {
-            title: pageTitle,
+            title: `${topicData.title} | ODORIO`,
             description: shortDescription, // ← LINEのカードにはここが出ます
             url: `https://odorio-app.vercel.app/topic/${id}`,
             siteName: 'ODORIO',
@@ -53,7 +53,7 @@ export async function generateMetadata(
         },
         twitter: {
             card: 'summary_large_image',
-            title: pageTitle,
+            title: `${topicData.title} | ODORIO`,
             description: shortDescription, // ← Xのカードにはここが出ます
         }
     }

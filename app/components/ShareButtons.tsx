@@ -93,7 +93,8 @@ export default function ShareButtons({ title, options, topicId, votes, showStats
         // 2. PCや、開発環境(http)の場合はクリップボードにコピー
         else {
             try {
-                await navigator.clipboard.writeText(url);
+                const copyContent = `${shareText}\n#ODORIO\n${url}`;
+                await navigator.clipboard.writeText(copyContent);
                 setCopied(true); // コピー完了状態にする
                 setTimeout(() => setCopied(false), 2000); // 2秒後に戻す
             } catch (err) {
