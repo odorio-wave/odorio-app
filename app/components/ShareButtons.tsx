@@ -28,37 +28,43 @@ export default function ShareButtons({ title, options, topicId, votes, showStats
 
     // シェアするテキストを作成
     const generateShareText = () => {
-        // 基本のテキスト
-        const baseFooter = `\nみんなはどう思う？投票に参加してね！`;
-
+        // 選択肢がない場合はタイトルのみ
         if (!options || options.length === 0) {
-            return `${title}${baseFooter}`;
+            return `${title}\n`;
         }
 
-        // 票数データがない、または「統計表示NG（投票中など）」の場合は、選択肢名のみ
-        if (!votes || !showStats) {
-            return `${title}\n` + options.map(o => o.text).join(" 🆚 ") + baseFooter;
+        let optionsText = "";
+
+        // 1. 統計表示アリ (結果公開・議論・アーカイブ)
+        if (votes && showStats) {
+            const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+
+            optionsText = options.map(o => {
+                const count = votes[o.id] || 0;
+                // 0票の時は0%にする
+                const percent = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
+                return `${o.text}(${percent}%)`;
+            }).join(" vs ");
+
+            // 例:
+            // キノコ vs タケノコ
+            // きの(58%) vs たけ(42%)
+            // (現在1200票)
+            return `${title}\n${optionsText}\n(現在${totalVotes}票)`;
         }
 
-        // --- 以下は showStats = true (結果公開・議論・アーカイブ) の時のみ実行 ---
+        // 2. 通常時 (投票中・隠すフェーズ)
+        // 「きのこ vs たけのこ」のようにシンプルに
+        optionsText = options.map(o => o.text).join(" vs ");
 
-        // 合計票数を計算
-        const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
-
-        const optionTexts = options.map(o => {
-            const count = votes[o.id] || 0;
-            const percent = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
-            return `${o.text}(${percent}%)`;
-        });
-
-        return `${title}\n` + optionTexts.join(" 🆚 ") + `\n現在${totalVotes}票！${baseFooter}`;
+        return `${title}\n${optionsText}`;
     };
 
     const shareText = generateShareText();
 
     // エンコード（URLやテキストをリンク用に変換）
     const encodedUrl = encodeURIComponent(url);
-    const encodedText = encodeURIComponent(shareText + "#ODORIO");
+    const encodedText = encodeURIComponent(shareText + "\n#ODORIO");
 
     // マウント前やURL生成前はローディング表示
     if (!mounted || !url) {
@@ -69,14 +75,14 @@ export default function ShareButtons({ title, options, topicId, votes, showStats
     const handleNativeShare = async () => {
         const shareData = {
             title: title,
-            text: shareText + " #ODORIO",
+            text: shareText + "\n#ODORIO",
             url: url,
         };
 
         // 1. スマホなど Web Share API が使える場合
         // (HTTPS環境かつ、ブラウザが対応している場合のみ動作)
         // ※ navigator.canShare で「本当にシェアできるか」を事前チェック
-        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        if (navigator.share && (navigator.canShare ? navigator.canShare(shareData) : true)) {
             try {
                 await navigator.share(shareData);
             } catch (error) {
