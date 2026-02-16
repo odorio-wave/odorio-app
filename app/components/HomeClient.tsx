@@ -36,8 +36,21 @@ const MAX_TITLE_LENGTH = 40;
 const MAX_DESC_LENGTH = 300;
 const MAX_OPTION_LENGTH = 15;
 
-// 日付ユーティリティ
-const parseDate = (s: string) => new Date(s);
+// 安全な日付変換ヘルパー関数
+// FirestoreのTimestamp型も、文字列の日付も、Date型もすべて「Dateオブジェクト」に統一して返します
+const getTopicDate = (d: any) => {
+    if (!d) return new Date(); // データがない場合は現在時刻（エラー回避）
+    // Firestore Timestamp型の場合 (.toDate()メソッドを持つ)
+    if (typeof d.toDate === 'function') {
+        return d.toDate();
+    }
+    // すでにDate型の場合
+    if (d instanceof Date) {
+        return d;
+    }
+    // 文字列や数値の場合
+    return new Date(d);
+};
 
 // フェーズ決定ロジック
 function computePhase(now: Date, overrideMode: string | null) {
@@ -67,8 +80,11 @@ function useCheckAndArchive(initialTopics: Topic[], now: Date, onUpdate: () => v
         const nowTime = now.getTime();
         initialTopics.forEach(async (t) => {
             // 終了時間を過ぎているかチェック
-            const endDate = parseDate(t.endDate).getTime();
-            if (nowTime <= endDate) return; // まだ終了していないなら何もしない
+            const endDate = getTopicDate(t.endDate).getTime();
+
+            // まだ終了していないなら何もしない (現在時刻 <= 終了日時)
+            if (nowTime <= endDate) return;
+
             if (t.status !== 'published') return; // 公開中以外は何もしない
             if (t.type === 'archive') return; // 既にアーカイブなら何もしない
 
@@ -79,7 +95,7 @@ function useCheckAndArchive(initialTopics: Topic[], now: Date, onUpdate: () => v
                         await updateDoc(doc(db, "topics", t.topicId), {
                             type: 'archive',
                             status: 'archived',
-                            archiveType: 'weekly' // 週替わりとして記録
+                            archiveType: 'weekly'
                         });
                         onUpdate();
                     }
@@ -109,7 +125,7 @@ function useCheckAndArchive(initialTopics: Topic[], now: Date, onUpdate: () => v
                     await setDoc(doc(db, "topics", archiveId), archiveData);
 
                     // 2. 元の常設お題（本体）のリセット
-                    // ★重要: ここで type: 'official' を明示して、週替わり化を防ぐ
+                    // ここで type: 'official' を明示して、週替わり化を防ぐ
                     const nextEndDate = new Date();
                     nextEndDate.setDate(nextEndDate.getDate() + 7); // 次の期間をセット(例:7日後)
 
@@ -382,12 +398,7 @@ export default function Home() {
         const archive: Topic[] = [];
         const official: Topic[] = [];
 
-        // 日付パース用のヘルパー
-        const getTopicDate = (d: any) => {
-            if (!d) return new Date(); // 日付なし
-            // Firestore Timestamp対応
-            return typeof d.toDate === 'function' ? d.toDate() : new Date(d);
-        };
+
 
         allTopics.forEach((t) => {
             // 1. ステータスチェック
@@ -398,15 +409,12 @@ export default function Home() {
             // 2. 日付の計算
             const s = getTopicDate(t.startDate).getTime();
             const e = getTopicDate(t.endDate).getTime();
-            // 予告開始日（設定がない場合は 0 = すぐ表示）
             const a = (t as any).announcementDate
                 ? getTopicDate((t as any).announcementDate).getTime()
                 : 0;
             const isEnded = nowTime > e;
 
-            // --- 振り分けロジック（順番が重要！）---
-
-            // A. 非表示（下書きや削除済み）は無視
+            // A. 非表示は無視
             if (!isVisible) return;
 
             // B. 手動アーカイブは最優先でアーカイブへ
@@ -415,33 +423,26 @@ export default function Home() {
                 return;
             }
 
-            // C. 【重要】未来の日付なら、常設・週替わり関係なく「予告」へ！
+            // C. 未来の日付なら「予告」へ
             if (nowTime < s) {
-                // もし「予告開始日」が設定されていて、まだその時間になっていなければ
-                // 何もせずに return（＝画面には一切表示しない）
                 if (a > 0 && nowTime < a) {
                     return;
                 }
-
-                // 予告開始日を過ぎている、または設定がないなら「予告」に出す
                 upcoming.push(t);
                 return;
             }
 
-            // D. 期限切れなら、常設だろうと週替わりだろうと「アーカイブ」へ！
+            // D. 期限切れなら「アーカイブ」へ
             if (isEnded) {
                 archive.push(t);
                 return;
             }
 
-            // E. ここまで来て生き残っているものは「開催中」
-            // 常設タイプなら常設へ
+            // E. 開催中
             if (t.type === "official") {
                 official.push(t);
                 return;
             }
-
-            // それ以外（週替わり）は Current へ
             current.push(t);
         });
 

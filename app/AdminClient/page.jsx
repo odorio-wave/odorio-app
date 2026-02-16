@@ -52,6 +52,21 @@ const getNextMonday9AM = () => {
     return d;
 };
 
+// 投票データの集計ヘルパー
+const getVoteStats = (topic) => {
+    const votes = topic.votes || {};
+    const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+
+    // 選択肢ごとの詳細情報を作成
+    const optionsWithStats = (topic.options || []).map(opt => {
+        const count = votes[opt.id] || 0;
+        const percent = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
+        return { ...opt, count, percent };
+    });
+
+    return { totalVotes, optionsWithStats };
+};
+
 // フェーズ設定保存関数
 const setOverridePhase = async (phaseKey) => {
     if (!auth.currentUser) {
@@ -110,6 +125,42 @@ const CollapsibleSection = ({ title, count, color, children, defaultOpen = false
                     {children}
                 </div>
             )}
+        </div>
+    );
+};
+
+// 投票バーを表示するコンポーネント
+const VoteStatsBar = ({ topic }) => {
+    const { totalVotes, optionsWithStats } = getVoteStats(topic);
+
+    // 色の配列（TopicClientと同じ順序）
+    const BAR_COLORS = ["bg-blue-500", "bg-purple-500", "bg-green-500", "bg-yellow-500", "bg-red-500"];
+    const TEXT_COLORS = ["text-blue-600", "text-purple-600", "text-green-600", "text-yellow-600", "text-red-600"];
+
+    return (
+        <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200 text-sm">
+            <div className="flex justify-between font-bold mb-1 text-gray-600">
+                <span>📊 現在の投票状況</span>
+                <span>合計: {totalVotes}票</span>
+            </div>
+            <div className="space-y-1">
+                {optionsWithStats.map((opt, i) => (
+                    <div key={opt.id || i} className="flex items-center gap-2">
+                        <div className={`w-24 shrink-0 font-bold truncate ${TEXT_COLORS[i % 5]}`}>
+                            {opt.text}
+                        </div>
+                        <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                                style={{ width: `${opt.percent}%` }}
+                                className={`h-full ${BAR_COLORS[i % 5]}`}
+                            />
+                        </div>
+                        <div className="w-16 text-right font-mono text-xs text-gray-600">
+                            {opt.count}票 ({opt.percent}%)
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
@@ -926,40 +977,44 @@ export default function AdminControl() {
                     <div className="space-y-2">
                         {officialLiveTopics.length > 0 ? officialLiveTopics.map(t => (
                             <div key={t.topicId} className="p-3 bg-white border border-indigo-100 rounded-lg shadow-sm flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center">
-                                <div>
-                                    <div className="font-bold text-gray-800">
-                                        {t.title}
+                                <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center mb-2">
+                                    <div>
+                                        <div className="font-bold text-gray-800">
+                                            {t.title}
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                            ID: {t.topicId}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-gray-400">
-                                        ID: {t.topicId}
+                                    <div className="flex gap-1 shrink-0">
+                                        <button
+                                            onClick={() => loadTopicForEdit(t)}
+                                            className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded border border-blue-100"
+                                        >
+                                            編集
+                                        </button>
+                                        <button
+                                            onClick={() => togglePublishTopic(t.topicId, t.status)}
+                                            className="px-2 py-1 bg-yellow-50 text-yellow-600 text-xs font-bold rounded border border-yellow-100"
+                                        >
+                                            非公開
+                                        </button>
+                                        <button
+                                            onClick={() => manualArchiveTopic(t.topicId)}
+                                            className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-100"
+                                        >
+                                            アーカイブ
+                                        </button>
+                                        <button
+                                            onClick={() => deleteTopic(t.topicId)}
+                                            className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100"
+                                        >
+                                            削除
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex gap-1 shrink-0">
-                                    <button
-                                        onClick={() => loadTopicForEdit(t)}
-                                        className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded border border-blue-100"
-                                    >
-                                        編集
-                                    </button>
-                                    <button
-                                        onClick={() => togglePublishTopic(t.topicId, t.status)}
-                                        className="px-2 py-1 bg-yellow-50 text-yellow-600 text-xs font-bold rounded border border-yellow-100"
-                                    >
-                                        非公開
-                                    </button>
-                                    <button
-                                        onClick={() => manualArchiveTopic(t.topicId)}
-                                        className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-100"
-                                    >
-                                        アーカイブ
-                                    </button>
-                                    <button
-                                        onClick={() => deleteTopic(t.topicId)}
-                                        className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100"
-                                    >
-                                        削除
-                                    </button>
-                                </div>
+                                {/* 投票状況の表示 */}
+                                <VoteStatsBar topic={t} />
                             </div>
                         )) : <p className="text-center text-gray-400 text-sm">
                             現在ありません
@@ -972,40 +1027,44 @@ export default function AdminControl() {
                     <div className="space-y-2">
                         {weeklyLiveTopics.length > 0 ? weeklyLiveTopics.map(t => (
                             <div key={t.topicId} className="p-3 bg-white border border-blue-100 rounded-lg shadow-sm flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center">
-                                <div>
-                                    <div className="font-bold text-gray-800">
-                                        {t.title}
+                                <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center mb-2">
+                                    <div>
+                                        <div className="font-bold text-gray-800">
+                                            {t.title}
+                                        </div>
+                                        <div className="text-xs text-blue-500 font-bold">
+                                            期限: {new Date(t.endDate).toLocaleDateString()}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-blue-500 font-bold">
-                                        期限: {new Date(t.endDate).toLocaleDateString()}
+                                    <div className="flex gap-1 shrink-0">
+                                        <button
+                                            onClick={() => loadTopicForEdit(t)}
+                                            className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded border border-blue-100"
+                                        >
+                                            編集
+                                        </button>
+                                        <button
+                                            onClick={() => togglePublishTopic(t.topicId, t.status)}
+                                            className="px-2 py-1 bg-yellow-50 text-yellow-600 text-xs font-bold rounded border border-yellow-100"
+                                        >
+                                            非公開
+                                        </button>
+                                        <button
+                                            onClick={() => manualArchiveTopic(t.topicId)}
+                                            className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-100"
+                                        >
+                                            アーカイブ
+                                        </button>
+                                        <button
+                                            onClick={() => deleteTopic(t.topicId)}
+                                            className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100"
+                                        >
+                                            削除
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex gap-1 shrink-0">
-                                    <button
-                                        onClick={() => loadTopicForEdit(t)}
-                                        className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded border border-blue-100"
-                                    >
-                                        編集
-                                    </button>
-                                    <button
-                                        onClick={() => togglePublishTopic(t.topicId, t.status)}
-                                        className="px-2 py-1 bg-yellow-50 text-yellow-600 text-xs font-bold rounded border border-yellow-100"
-                                    >
-                                        非公開
-                                    </button>
-                                    <button
-                                        onClick={() => manualArchiveTopic(t.topicId)}
-                                        className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-100"
-                                    >
-                                        アーカイブ
-                                    </button>
-                                    <button
-                                        onClick={() => deleteTopic(t.topicId)}
-                                        className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100"
-                                    >
-                                        削除
-                                    </button>
-                                </div>
+                                {/* 投票状況の表示 */}
+                                <VoteStatsBar topic={t} />
                             </div>
                         )) : <p className="text-center text-gray-400 text-sm">
                             現在ありません
