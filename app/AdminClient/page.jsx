@@ -385,6 +385,14 @@ export default function AdminControl() {
 
     const deleteTopic = async (id) => { if (confirm("削除しますか？")) await deleteDoc(doc(db, "topics", id)); };
     const togglePublishTopic = async (id, status) => await updateDoc(doc(db, "topics", id), { status: status === 'published' ? 'pending' : 'published' });
+
+    // アーカイブの表示/非表示を切り替える関数
+    const toggleArchiveStatus = async (id, currentStatus) => {
+        // 現在 'archived' なら 'hidden' に、それ以外('hidden'など)なら 'archived' に戻す
+        const newStatus = currentStatus === 'hidden' ? 'archived' : 'hidden';
+        await updateDoc(doc(db, "topics", id), { status: newStatus });
+    };
+
     // アーカイブとリセットを行う関数（コメント移動機能付き）
     const manualArchiveTopic = async (id) => {
         if (!confirm("今週分をアーカイブ化して、お題をリセットしますか？\n\n・現在の投票数とコメントは「過去ログ」に移動・保存されます\n・本体は「票数0」「コメントなし」の新品状態で再スタートします")) return;
@@ -1227,6 +1235,7 @@ export default function AdminControl() {
                             const likeCount = t.archiveLikes?.length || 0;
                             const isOfficial = t.archiveType === 'official' || t.title.includes("(過去ログ)");
                             const originalId = t.originalEndpointId;
+                            const isHidden = t.status === 'hidden';
 
                             // このお題に関連する「過去ログ」を全部探す
                             const historyList = originalId
@@ -1239,7 +1248,7 @@ export default function AdminControl() {
                             const isHistoryOpen = openHistoryId === originalId;
 
                             return (
-                                <div key={t.topicId} className="bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition overflow-hidden">
+                                <div key={t.topicId} className={`bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition overflow-hidden ${isHidden ? 'opacity-60 bg-gray-100' : ''}`}>
                                     {/* メインの行 */}
                                     <div className="flex justify-between items-center p-3">
                                         <div className="min-w-0 mr-2">
@@ -1248,6 +1257,9 @@ export default function AdminControl() {
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded border ${isOfficial ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                                                     {isOfficial ? '常設' : '週替'}
                                                 </span>
+                                                {isHidden && <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">
+                                                    🚫 非公開
+                                                </span>}
                                                 <div className="font-medium text-gray-700 truncate">{t.title}</div>
                                             </div>
                                             <div className="flex items-center gap-3 text-[10px] text-gray-400">
@@ -1275,6 +1287,13 @@ export default function AdminControl() {
                                             </div>
                                         </div>
                                         <div className="flex gap-1 shrink-0">
+                                            {/* 非公開ボタン */}
+                                            <button
+                                                onClick={() => toggleArchiveStatus(t.topicId, t.status)}
+                                                className={`px-2 py-1 text-xs font-bold rounded border transition ${isHidden ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-600 border-yellow-100'}`}
+                                            >
+                                                {isHidden ? '公開する' : '非公開'}
+                                            </button>
                                             <button
                                                 onClick={() => handleRestoreClick(t)}
                                                 className="px-2 py-1 text-xs font-bold bg-orange-500 text-white rounded hover:bg-orange-600 shadow-sm"

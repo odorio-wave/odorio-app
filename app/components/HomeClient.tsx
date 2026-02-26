@@ -88,20 +88,6 @@ function useCheckAndArchive(initialTopics: Topic[], now: Date, onUpdate: () => v
             if (t.status !== 'published') return; // 公開中以外は何もしない
             if (t.type === 'archive') return; // 既にアーカイブなら何もしない
 
-            // 週替わりお題の場合
-            if (t.type === 'weekly' || !t.type) {
-                try {
-                    if (t.topicId) {
-                        await updateDoc(doc(db, "topics", t.topicId), {
-                            type: 'archive',
-                            status: 'archived',
-                            archiveType: 'weekly'
-                        });
-                        onUpdate();
-                    }
-                } catch (e) { console.error(e); }
-            }
-
             // 常設お題の場合
             else if (t.type === 'official') {
                 try {

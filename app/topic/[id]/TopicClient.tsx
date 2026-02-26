@@ -21,6 +21,9 @@ import {
     DynamicTopicData
 } from "../../dynamic_topic";
 
+// 複数人の管理者がいる場合はカンマ区切りで追加できます ["uid1", "uid2"]
+const ADMIN_UIDS = ["jzLjT7Sbgle1nb1WOmPBUI5BdRR2", "shztCDby7vdjiD0UdosXVPxMSVx1"];
+
 // --- Constants ---
 const COLORS = {
     YES_BUTTON: "bg-blue-600 hover:bg-blue-700",
@@ -1078,6 +1081,11 @@ export default function TopicClient({ id }: { id: string }) {
                                                     <span className="bg-orange-100 text-orange-600 px-1 rounded text-[9px]">
                                                         🔄再
                                                     </span>}
+                                                {ADMIN_UIDS.includes((c as any).userId) && (
+                                                    <span className="ml-1 bg-gray-900 text-yellow-400 border border-yellow-500 px-1.5 py-0.5 rounded text-[9px] flex items-center gap-0.5 shadow-sm">
+                                                        <span>👑</span> 運営
+                                                    </span>
+                                                )}
                                             </span>
                                             <span>{c.timestamp}</span>
                                         </div>
