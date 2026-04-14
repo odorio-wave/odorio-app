@@ -1,4 +1,4 @@
-import './globals.css'
+// import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 // ★ ここでサイト全体の「顔」となる情報を設定します ★
 export const metadata: Metadata = {
   metadataBase: new URL('https://odorio-app.vercel.app'),
+  alternates: {
+    canonical: '/',
+  },
   title: 'ODORIO - 投票×議論',
   description: '正解のない哲学的な問題やみんなが気になっているトピックについて、みんなで投票・議論するプラットフォーム',
   verification: {
