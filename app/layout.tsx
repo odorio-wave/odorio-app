@@ -4,13 +4,14 @@ import { Inter } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'] })
 
-// ★ ここでサイト全体の「顔」となる情報を設定します ★
+// ここでサイト全体の「顔」となる情報を設定
 export const metadata: Metadata = {
   metadataBase: new URL('https://odorio-app.vercel.app'),
   alternates: {
     canonical: '/',
   },
   title: 'ODORIO - 投票×議論',
+  applicationName: 'ODORIO',
   description: '正解のない哲学的な問題やみんなが気になっているトピックについて、みんなで投票・議論するプラットフォーム',
   verification: {
     google: "-VSXzAap1j-5FdzG1U2doM1AA7KWja664-KDBQU7oNM",
@@ -49,8 +50,20 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'ODORIO',
+    url: 'https://odorio-app.vercel.app/',
+  }
   return (
     <html lang="ja">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   )
