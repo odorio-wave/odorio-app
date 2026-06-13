@@ -8,7 +8,7 @@ type Props = {
     icon?: string;
     topics: any[];
     initialCount?: number;
-    emptyMessage?: string;
+    emptyMessage?: React.ReactNode;
     isResultsVisible?: boolean;
     onLike?: (id: string) => void;
     userId?: string | null;

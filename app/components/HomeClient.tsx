@@ -595,7 +595,15 @@ export default function Home() {
                             icon="🔥"
                             topics={current}
                             initialCount={2}
-                            emptyMessage="現在、今週の週替わりお題は準備中です。ODORIO（オドリオ）では、毎週新しいトピックを追加し、みんなで投票と議論を行っています。新しいお題が公開されるまでの間は、ぜひ下部の「お題をリクエスト（掲示板）」からあなたが気になっている究極の2択や、議論したいテーマを投稿してみてください。また、常設のお題への投票もお待ちしております！"
+                            emptyMessage={
+                            <>
+                                現在、今週の週替わりお題は準備中です。<br />
+                                ODORIO（オドリオ）では、毎週新しいトピックを追加し、みんなで投票と議論を行っています。<br />
+                                <br />
+                                新しいお題が公開されるまでの間は、ぜひ下部の「お題をリクエスト（掲示板）」からあなたが気になっている究極の2択や、議論したいテーマを投稿してみてください。<br />
+                                また、常設のお題への投票もお待ちしております！
+                            </>
+                            }
                             isResultsVisible={showResults} // ★フラグを渡す
                             userId={userId}
                         />
@@ -606,7 +614,7 @@ export default function Home() {
                             icon="✨"
                             topics={upcoming}
                             initialCount={2}
-                            emptyMessage="予告はまだありません"
+                            emptyMessage="次のお題は現在企画中です。近日中に新しいテーマを公開しますので、しばらくお待ちください！"
                             isResultsVisible={false} // 予告なので結果は非表示
                             userId={userId}
                         />
