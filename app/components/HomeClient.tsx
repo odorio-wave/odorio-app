@@ -595,7 +595,7 @@ export default function Home() {
                             icon="🔥"
                             topics={current}
                             initialCount={2}
-                            emptyMessage="今週のお題はまだありません"
+                            emptyMessage="現在、今週の週替わりお題は準備中です。ODORIO（オドリオ）では、毎週新しいトピックを追加し、みんなで投票と議論を行っています。新しいお題が公開されるまでの間は、ぜひ下部の「お題をリクエスト（掲示板）」からあなたが気になっている究極の2択や、議論したいテーマを投稿してみてください。また、常設のお題への投票もお待ちしております！"
                             isResultsVisible={showResults} // ★フラグを渡す
                             userId={userId}
                         />
